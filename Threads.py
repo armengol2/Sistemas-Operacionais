@@ -300,8 +300,7 @@ if __name__ == "__main__":
         for nome in nomes_traders
     }
     inicio_pregao = time.time()
-
-    print("EMPRESAS CARREGADAS:")
+    
     for nome, preco_inicial in EMPRESAS_INICIAIS:
         print(f"- {nome}: R${preco_inicial:.2f}")
     print("=" * 64)
