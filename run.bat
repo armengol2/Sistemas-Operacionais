@@ -8,5 +8,5 @@ if not exist "%PYTHON_EXE%" (
     exit /b 1
 )
 
-"%PYTHON_EXE%" "%~dp0Threads.py"
+"%PYTHON_EXE%" "%~dp0Threads_Algoritmos.py"
 pause
