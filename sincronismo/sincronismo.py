@@ -161,6 +161,7 @@ def acao_trader(nome, lista_mercados, rodadas):
                 mercado_alvo.vender(nome, quantidade)
 
         time.sleep(random.uniform(0.01, 0.05))
+        # time.sleep(1)
         rodada_atual += 1
 
 
