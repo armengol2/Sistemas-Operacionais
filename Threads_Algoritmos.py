@@ -117,7 +117,7 @@ def aplicar_operacao_mercado(
         return
 
     acao = rng.choice(["COMPRA", "VENDA"])
-    quantidade = rng.randint(1, 35)
+    quantidade = rng.randint(1, 50)
 
     if acao == "COMPRA":
         mercado.preco_atual += 0.1 * quantidade
