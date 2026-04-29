@@ -2,6 +2,8 @@ import random
 import threading
 import time
 
+random.seed(1)
+
 try:
     from rich.console import Console
     from rich.console import Group
@@ -153,15 +155,16 @@ def acao_trader(nome, lista_mercados, rodadas):
         mercado_alvo = random.choice(lista_mercados)
         if mercado_alvo.ativo_valido:
             acao = random.choice(["comprar", "vender"])
-            quantidade = random.randint(1, 100)
+            # quantidade = random.randint(1, 100)
+            quantidade = 10
 
             if acao == "comprar":
                 mercado_alvo.comprar(nome, quantidade)
             else:
                 mercado_alvo.vender(nome, quantidade)
 
-        time.sleep(random.uniform(0.01, 0.05))
-        # time.sleep(1)
+        # time.sleep(random.uniform(0.01, 0.05))
+        time.sleep(0.01)
         rodada_atual += 1
 
 
@@ -306,9 +309,9 @@ def resumo_final(mercados):
 
 
 if __name__ == "__main__":
-    quantidade_empresas = int(input("quantidade de empresas: "))
-    quantidade_traders = int(input("quantidade de traders: "))
-    rodadas = int(input("quantidade de rodadas: "))
+    quantidade_empresas = 2
+    quantidade_traders = 200
+    rodadas = 2000
 
     EMPRESAS_INICIAIS = []
     for i in range(quantidade_empresas):
@@ -353,13 +356,13 @@ if __name__ == "__main__":
             while any(trader.is_alive() for trader in threads):
                 live.update(montar_dashboard(
                     mercados, nomes_traders, rodadas, inicio))
-                time.sleep(0.1)
+                time.sleep(0.01)
 
             live.update(montar_dashboard(
                 mercados, nomes_traders, rodadas, inicio))
     else:
         while any(trader.is_alive() for trader in threads):
-            time.sleep(0.1)
+            time.sleep(0.01)
 
     if RICH_DISPONIVEL:
         CONSOLE.print("\n[bold cyan]MERCADO FECHADO[/bold cyan]")
@@ -374,3 +377,12 @@ if __name__ == "__main__":
             print(f"Menor Valor: R${mercado.menor_valor:.2f}")
             print(f"Maior Valor: R${mercado.maior_valor:.2f}")
             print("-" * 45)
+
+    tempo_final = time.time() - inicio
+    total_ops = sum(d["operacoes"] for d in PAINEL_TRADERS.values())
+    volume_final = sum(d["volume"] for d in PAINEL_TRADERS.values())
+
+    print(f"\n--- RESULTADOS DA SIMULAÇÃO ---")
+    print(f"Tempo de Execução: {tempo_final:.4f} segundos")
+    print(f"Operações Totais: {total_ops}")
+    print(f"Volume Total Movimentado: {volume_final}")
