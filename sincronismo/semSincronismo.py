@@ -54,7 +54,10 @@ class Mercado:
             return
 
         # Operação atômica: ninguém lê ou altera o preço até o bloco acabar
-        self.preco_atual += 0.1 * quantidade
+        preco_atual = self.preco_atual
+        time.sleep(0.1)
+
+        self.preco_atual = preco_atual + 0.1 * quantidade
 
         if self.preco_atual > self.maior_valor:
             self.maior_valor = self.preco_atual
@@ -79,7 +82,10 @@ class Mercado:
         if not self.ativo_valido:
             return
 
-        self.preco_atual -= 0.1 * quantidade
+        preco_atual = self.preco_atual
+        time.sleep(0.1)
+
+        self.preco_atual = preco_atual - 0.1 * quantidade
 
         if self.preco_atual <= 0:
             self.preco_atual = 0
@@ -137,8 +143,7 @@ def acao_trader(nome, lista_mercados, rodadas):
         mercado_alvo = random.choice(lista_mercados)
         if mercado_alvo.ativo_valido:
             acao = random.choice(["comprar", "vender"])
-            # quantidade = random.randint(1, 100)
-            quantidade = 10
+            quantidade = random.randint(1, 100)
 
             if acao == "comprar":
                 mercado_alvo.comprar(nome, quantidade)
@@ -146,7 +151,7 @@ def acao_trader(nome, lista_mercados, rodadas):
                 mercado_alvo.vender(nome, quantidade)
 
         # time.sleep(random.uniform(0.01, 0.05))
-        # time.sleep(0.01)
+        time.sleep(0.01)
         rodada_atual += 1
 
 
@@ -292,8 +297,8 @@ def resumo_final(mercados):
 
 if __name__ == "__main__":
     quantidade_empresas = 2
-    quantidade_traders = 200
-    rodadas = 2000
+    quantidade_traders = 20
+    rodadas = 10
 
     EMPRESAS_INICIAIS = []
     for i in range(quantidade_empresas):
