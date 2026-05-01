@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from html import escape
+from pathlib import Path
 import random
 import time
 from typing import List, Optional, Tuple
@@ -486,6 +488,182 @@ def desenhar_gantt(gantt: List[Tuple[str, float, float]]) -> str:
     return "".join(blocos) + "|"
 
 
+def gerar_svg_gantt(resultado: ResultadoEscalonamento) -> str:
+    margem_esquerda = 120
+    margem_direita = 34
+    margem_topo = 52
+    altura_linha = 38
+    altura_barra = 20
+    largura_total = 980
+    largura_util = largura_total - margem_esquerda - margem_direita
+    altura_total = margem_topo + max(1, len(resultado.gantt)) * altura_linha + 48
+    tempo_final = max((fim for _, _, fim in resultado.gantt), default=1.0)
+    tempo_final = max(tempo_final, 1.0)
+    cor_barra = "#f97316" if resultado.algoritmo == "FCFS" else "#2563eb"
+    cor_barra_clara = "#ffedd5" if resultado.algoritmo == "FCFS" else "#dbeafe"
+    linhas = [
+        f'<svg viewBox="0 0 {largura_total} {altura_total}" class="gantt" role="img" '
+        f'aria-label="Grafico de Gantt {escape(resultado.algoritmo)}">',
+        '<rect width="100%" height="100%" rx="14" fill="#ffffff"/>',
+        '<text x="24" y="30" class="svg-title">'
+        f'Grafico de Gantt - {escape(resultado.algoritmo)}</text>',
+    ]
+
+    divisoes = 6
+    for indice in range(divisoes + 1):
+        x = margem_esquerda + (largura_util * indice / divisoes)
+        tempo = tempo_final * indice / divisoes
+        linhas.append(f'<line x1="{x:.2f}" y1="40" x2="{x:.2f}" y2="{altura_total - 26}" class="axis-grid"/>')
+        linhas.append(f'<text x="{x:.2f}" y="48" class="tick">{tempo:.1f}s</text>')
+
+    for linha, (nome, inicio, fim) in enumerate(resultado.gantt):
+        y = margem_topo + linha * altura_linha
+        x = margem_esquerda + (inicio / tempo_final) * largura_util
+        largura = max(3.0, ((fim - inicio) / tempo_final) * largura_util)
+        linhas.append(f'<text x="24" y="{y + 16}" class="label">{escape(nome)}</text>')
+        linhas.append(
+            f'<rect x="{x:.2f}" y="{y}" width="{largura:.2f}" height="{altura_barra}" '
+            f'rx="5" fill="{cor_barra}"/>'
+        )
+        linhas.append(
+            f'<rect x="{x:.2f}" y="{y}" width="{largura:.2f}" height="{altura_barra}" '
+            f'rx="5" fill="{cor_barra_clara}" opacity="0.18"/>'
+        )
+        if largura > 64:
+            linhas.append(
+                f'<text x="{x + largura / 2:.2f}" y="{y + 14}" class="bar-text">'
+                f'{inicio:.2f}s - {fim:.2f}s</text>'
+            )
+
+    linhas.append("</svg>")
+    return "\n".join(linhas)
+
+
+def gerar_relatorio_visual(
+    processos: List[TraderProcesso],
+    resultado_fcfs: ResultadoEscalonamento,
+    resultado_sjf: ResultadoEscalonamento,
+) -> Path:
+    caminho = Path(__file__).with_name("relatorio_gantt.html")
+    gerado_em = time.strftime("%d/%m/%Y %H:%M:%S")
+    html = f"""<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Relatorio visual de escalonamento</title>
+    <style>
+        :root {{
+            color-scheme: light;
+            --bg: #f6f7fb;
+            --ink: #172033;
+            --muted: #667085;
+            --line: #d9dee8;
+            --panel: #ffffff;
+        }}
+        * {{ box-sizing: border-box; }}
+        body {{
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.45;
+        }}
+        main {{
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 32px 0 42px;
+        }}
+        header {{
+            margin-bottom: 22px;
+        }}
+        h1 {{
+            margin: 0 0 8px;
+            font-size: clamp(28px, 4vw, 44px);
+            letter-spacing: 0;
+        }}
+        h2 {{
+            margin: 0 0 14px;
+            font-size: 22px;
+        }}
+        p {{
+            margin: 0;
+            color: var(--muted);
+        }}
+        section {{
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: 0 8px 22px rgba(25, 35, 55, 0.06);
+            margin-top: 18px;
+            padding: 18px;
+            overflow-x: auto;
+        }}
+        .charts {{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }}
+        .gantt {{
+            width: 100%;
+            min-width: 760px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }}
+        .svg-title {{
+            font-size: 18px;
+            font-weight: 700;
+            fill: var(--ink);
+        }}
+        .axis-grid {{
+            stroke: #dce2ec;
+            stroke-width: 1;
+        }}
+        .tick {{
+            fill: var(--muted);
+            font-size: 11px;
+            text-anchor: middle;
+        }}
+        .label {{
+            fill: var(--ink);
+            font-size: 13px;
+            font-weight: 600;
+        }}
+        .bar-text {{
+            fill: #ffffff;
+            font-size: 11px;
+            text-anchor: middle;
+            font-weight: 700;
+        }}
+        @media (max-width: 760px) {{
+            main {{
+                width: min(100% - 20px, 1180px);
+                padding-top: 20px;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1>Graficos de Gantt</h1>
+            <p>FCFS e SJF gerados automaticamente em {gerado_em}.</p>
+        </header>
+
+        <section>
+            <div class="charts">
+                {gerar_svg_gantt(resultado_fcfs)}
+                {gerar_svg_gantt(resultado_sjf)}
+            </div>
+        </section>
+    </main>
+</body>
+</html>
+"""
+    caminho.write_text(html, encoding="utf-8")
+    return caminho
+
+
 def simular_tempo_real_fcfs(
     processos: List[TraderProcesso],
     quantidade_empresas: int,
@@ -725,6 +903,13 @@ def main():
         imprimir_com_rich(processos, resultado_fcfs, resultado_sjf)
     else:
         imprimir_sem_rich(processos, resultado_fcfs, resultado_sjf)
+
+    caminho_relatorio = gerar_relatorio_visual(processos, resultado_fcfs, resultado_sjf)
+    mensagem_relatorio = f"\nRelatorio visual gerado em: {caminho_relatorio}"
+    if RICH_DISPONIVEL:
+        CONSOLE.print(f"[bold green]{mensagem_relatorio}[/bold green]")
+    else:
+        print(mensagem_relatorio)
 
 
 if __name__ == "__main__":
